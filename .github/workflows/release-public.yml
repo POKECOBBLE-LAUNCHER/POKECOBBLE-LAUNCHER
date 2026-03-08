@@ -1,0 +1,58 @@
+name: Release Launcher (PUBLIC REPO)
+
+# CE WORKFLOW DOIT ÊTRE DANS : POKECOBBLE-LAUNCHER/POKECOBBLE-LAUNCHER
+# Déclenché manuellement depuis l'onglet Actions du repo PUBLIC
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag à releaser (ex: v1.0.1)'
+        required: true
+        type: string
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write  # GITHUB_TOKEN peut créer des releases sur ce repo PUBLIC
+
+    steps:
+      # Checkout du repo PRIVÉ (lecture seule via PAT)
+      - name: Checkout repo privé
+        uses: actions/checkout@v4
+        with:
+          repository: POKECOBBLE-LAUNCHER/pokecobble_launcher
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        run: npm run build:win
+
+      # Publie la release sur CE repo public avec GITHUB_TOKEN (pas de 403 ici)
+      - name: Create release & upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.event.inputs.tag }}"
+          $version = $tag -replace '^v', ''
+
+          gh release create $tag `
+            --title "PokeCobble Launcher $tag" `
+            --notes "Release $tag" `
+            --latest
+
+          gh release upload $tag `
+            "dist/PokeCobble Launcher Setup $version.exe" `
+            "dist/PokeCobble Launcher Setup $version.exe.blockmap" `
+            dist/latest.yml
