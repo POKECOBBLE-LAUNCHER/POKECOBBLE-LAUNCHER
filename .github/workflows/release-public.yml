@@ -42,7 +42,7 @@ jobs:
       # Publie la release sur CE repo public avec GITHUB_TOKEN (pas de 403 ici)
       - name: Create release & upload
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN_2 }}
         run: |
           $tag = "${{ github.event.inputs.tag }}"
           $version = $tag -replace '^v', ''
